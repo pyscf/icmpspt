@@ -27,7 +27,7 @@ S. Sharma, G. Jeanmairet, and A. Alavi,  J. Chem. Phys., 144 (2016), 034103
 
 import pyscf
 import os
-import time
+
 import tempfile
 from functools import reduce
 import numpy
@@ -70,7 +70,7 @@ def writeNEVPTIntegrals(mc, E1, E2, E1eff, aaavsplit, nfro, fully_ic=False, thir
 
 
     # (Note: Integrals are in chemistry notation)
-    start = time.time()
+    start = logger.perf_counter()
     print('Producing the integrals')
     sys.stdout.flush()
     eris = _ERIS(mc, mo)
@@ -108,7 +108,7 @@ def writeNEVPTIntegrals(mc, E1, E2, E1eff, aaavsplit, nfro, fully_ic=False, thir
     if (not isinstance(eris['hfinal'], type(eris['cvcv']))):
       eriscvcv = lib.chkfile.load(eris['cvcv'].name, "eri_mo")#h5py.File(eris['cvcv'].name,'r')["eri_mo"]
     eriscvcv = eriscvcv.reshape(ncor, nvir, ncor, nvir)
-    end = time.time()
+    end = logger.perf_counter()
     print('......production of INT took %10.2f sec' %(end-start))
     print('')
     sys.stdout.flush()
@@ -147,7 +147,7 @@ def writeNEVPTIntegrals(mc, E1, E2, E1eff, aaavsplit, nfro, fully_ic=False, thir
       print("")
 
     # Write out ingredients to intfolder
-    start = time.time()
+    start = logger.perf_counter()
     print("Basic ingredients written to "+intfolder)
     sys.stdout.flush()
     # 2 "C"
@@ -219,7 +219,7 @@ def writeNEVPTIntegrals(mc, E1, E2, E1eff, aaavsplit, nfro, fully_ic=False, thir
     #  print("Output: {:} Shape: {:}".format(name,test.shape))
     #  numpy.save(intfolder+name, numpy.asfortranarray(test))
 
-    end = time.time()
+    end = logger.perf_counter()
     print('......savings of INGREDIENTS took %10.2f sec' %(end-start))
     print('')
     sys.stdout.flush()
@@ -244,7 +244,7 @@ def writeMRLCCIntegrals(mc, E1, E2, nfro, fully_ic=False, third_order=False,rest
 
 
     # (Note: Integrals are in chemistry notation)
-    start = time.time()
+    start = logger.perf_counter()
     print('Producing the integrals')
     sys.stdout.flush()
     eris={}
@@ -255,7 +255,7 @@ def writeMRLCCIntegrals(mc, E1, E2, nfro, fully_ic=False, third_order=False,rest
     if (third_order):
       eris['oeee'] = ao2mo.outcore.general_iofree(mc.mol, (mo[:,:nocc], mo[:,nocc:], mo[:,nocc:], mo[:,nocc:]), compact=False)
       eris['oeee'].shape=(nocc, nvir, nvir, nvir)
-    end = time.time()
+    end = logger.perf_counter()
     print('......production of INT took %10.2f sec' %(end-start))
     print('')
     sys.stdout.flush()
@@ -313,7 +313,7 @@ def writeMRLCCIntegrals(mc, E1, E2, nfro, fully_ic=False, third_order=False,rest
 
     # Write out ingredients to intfolder
     if not restart:
-      start = time.time()
+      start = logger.perf_counter()
       print("Basic ingredients written to "+intfolder)
       sys.stdout.flush()
       # 2 "C"
@@ -390,7 +390,7 @@ def writeMRLCCIntegrals(mc, E1, E2, nfro, fully_ic=False, third_order=False,rest
       #  print("Output: {:} Shape: {:}".format(name,test.shape))
       #  numpy.save(intfolder+name, numpy.asfortranarray(test))
 
-      end = time.time()
+      end = logger.perf_counter()
       print('......savings of INGREDIENTS took %10.2f sec' %(end-start))
       print('')
       sys.stdout.flush()
@@ -642,7 +642,7 @@ def writeMRLCCIntegralsDF(mc, E1, E2, nfro, fully_ic=False, restart=False):
 
 
     # (Note: Integrals are in chemistry notation)
-    start = time.time()
+    start = logger.perf_counter()
     print('Producing the integrals')
     sys.stdout.flush()
     naux = mc.with_df.get_naoaux()
@@ -664,7 +664,7 @@ def writeMRLCCIntegralsDF(mc, E1, E2, nfro, fully_ic=False, restart=False):
     #pqrs3 = numpy.einsum('Lp,Lq->pq', cderi, cderi)
     #pqrs3 = ao2mo.restore(1, pqrs3, norb)
     Lpq=Lpq.reshape(naux,norb,norb)
-    end = time.time()
+    end = logger.perf_counter()
     print('......production of INT took %10.2f sec' %(end-start))
     print('')
     sys.stdout.flush()
@@ -722,7 +722,7 @@ def writeMRLCCIntegralsDF(mc, E1, E2, nfro, fully_ic=False, restart=False):
 
     # Write out ingredients to intfolder
     if not restart:
-      start = time.time()
+      start = logger.perf_counter()
       print("Basic ingredients written to "+intfolder)
       sys.stdout.flush()
       numpy.save(intfolder+"W:Laa", numpy.asfortranarray(Lpq[:,ncor:nocc, ncor:nocc]))
@@ -736,7 +736,7 @@ def writeMRLCCIntegralsDF(mc, E1, E2, nfro, fully_ic=False, restart=False):
       numpy.save(intfolder+"W:Lae", numpy.asfortranarray(Lpq[:,ncor:nocc, nocc:    ]))
       numpy.save(intfolder+"W:Lee", numpy.asfortranarray(Lpq[:,nocc:    , nocc:    ]))
 
-      end = time.time()
+      end = logger.perf_counter()
       print('......savings of INGREDIENTS took %10.2f sec' %(end-start))
       print('')
       sys.stdout.flush()
@@ -1179,7 +1179,7 @@ def trans_e1_incore(mc, mo):
 
 def trans_e1_outcore(mc, mo, max_memory=None, ioblk_size=256, tmpdir=None,
                      verbose=0):
-    time0 = (time.clock(), time.time())
+    time0 = (logger.process_clock(), logger.perf_counter())
     mol = mc.mol
     log = logger.Logger(mc.stdout, verbose)
     ncor = mc.ncore
@@ -1214,7 +1214,7 @@ def trans_e1_outcore(mc, mo, max_memory=None, ioblk_size=256, tmpdir=None,
             time1[:] = logger.timer(mol, 'load_buf', *tuple(time1))
         return buf
     time0 = logger.timer(mol, 'halfe1', *time0)
-    time1 = [time.clock(), time.time()]
+    time1 = [logger.process_clock(), logger.perf_counter()]
     ao_loc = numpy.array(mol.ao_loc_nr(), dtype=numpy.int32)
     cvcvfile = tempfile.NamedTemporaryFile(dir=tmpdir)
     with h5py.File(cvcvfile.name) as f5:
