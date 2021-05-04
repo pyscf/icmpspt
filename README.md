@@ -9,7 +9,7 @@ Install
 -------
 * Install to python site-packages folder
 ```
-pip install https://github.com/pyscf/icmpspt
+pip install git+https://github.com/pyscf/icmpspt
 ```
 
 * Install in a custom folder for development
